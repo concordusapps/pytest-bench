@@ -1,4 +1,4 @@
-# py.bench
+# pytest-bench
 > Benchmark utility that plugs into pytest.
 
 ## Installation
