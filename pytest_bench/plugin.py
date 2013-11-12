@@ -97,17 +97,16 @@ class BenchmarkController(object):
             _function = locals_['_function']
 
             # Initialize benchmark process.
-            elapsed = 0.00
-            real_iterations = 0
+            props = {'elapsed': 0.00, 'iterations': 0}
 
             # Create a wrapper for the method to benchmark.
             @wraps(_function)
             def benchmark(*args, **kwargs):
-                nonlocal elapsed, real_iterations
+                # nonlocal elapsed, real_iterations
                 start = timer()
                 result = _function(*args, **kwargs)
-                elapsed += timer() - start
-                real_iterations += 1
+                props['elapsed'] += timer() - start
+                props['iterations'] += 1
                 return result
 
             # Replace the function with the wrapped function.
@@ -137,7 +136,7 @@ class BenchmarkController(object):
             six.exec_('%s = _function' % expression, globals_, locals_)
 
             # Construct a Benchmark instance to store the result.
-            self._benchmarks.append(Benchmark(item, elapsed, real_iterations))
+            self._benchmarks.append(Benchmark(item, **props))
 
         if item.cls is not None:
             setattr(item.cls, item.function.__name__, item_function_wrapper)
@@ -176,7 +175,7 @@ class BenchmarkController(object):
 
         # Format and write table header.
         header = ('{:<%d}{:>30}' % name_header_len).format(
-            'Benchmark', 'Time (μs)')
+            'Benchmark', 'Time (us)')
 
         tr.write_line('-' * columns)
         tr.write_line(header)
