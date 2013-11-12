@@ -4,11 +4,11 @@ import os
 import six
 import inspect
 import pytest
-import shutil
 from timeit import default_timer as timer
 from functools import wraps
 from termcolor import colored
 import colorama
+from .terminal import get_terminal_size
 
 
 def pytest_addoption(parser):
@@ -166,7 +166,7 @@ class BenchmarkController(object):
         colorama.init()
 
         # Calculate terminal width and size columns appropriately.
-        columns, lines = shutil.get_terminal_size()
+        columns, lines = get_terminal_size()
         name_header_len = columns - 30
 
         # Write session header.
