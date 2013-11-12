@@ -52,8 +52,10 @@ class BenchmarkController(object):
     def __init__(self, config):
         self.config = config
         self._benchmarks = []
+        self._item_function = None
 
     def pytest_runtest_setup(self, item):
+
         # Check to see if we need to benchmark any invocations.
         bench = item.keywords.get('bench')
         if bench is None:
@@ -96,7 +98,7 @@ class BenchmarkController(object):
             six.exec_('%s = benchmark' % expression, globals_, locals_)
 
             # Attempt to replace it in global scope as well.
-            globals_.update(locals_)
+            # globals_.update(locals_)
 
             # Get the (unbound) function.
             try:
@@ -123,8 +125,16 @@ class BenchmarkController(object):
         setattr(item.cls, item.function.__name__, item_function_wrapper)
 
     def pytest_runtest_teardown(self, item):
-        # Restore the original item function.
-        setattr(item.cls, item.function.__name__, self._item_function)
+
+        # Check to see if we need to handle a benchmark.
+        bench = item.keywords.get('bench')
+        if bench is None:
+            # Nope; nothing to see here.
+            return
+
+        if self._item_function is not None:
+            # Restore the original item function.
+            setattr(item.cls, item.function.__name__, self._item_function)
 
     def pytest_terminal_summary(self, terminalreporter):
         tr = terminalreporter
@@ -166,4 +176,4 @@ class BenchmarkController(object):
 
                 # Write out the elapsed.
                 tr.write_line(colored(
-                    '{:>30.4f}'.format(elapsed), 'white', attrs=['bold']))
+                    '{:>30,.4f}'.format(elapsed), 'white', attrs=['bold']))
