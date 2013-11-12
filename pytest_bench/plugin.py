@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import os
 import six
 import inspect
+import pytest
 # from timeit import timeit
 from timeit import default_timer as timer
 from functools import wraps
@@ -13,6 +14,8 @@ import colorama
 def pytest_addoption(parser):
     group = parser.getgroup("general")
     group.addoption('--bench', action='store_true',
+                    help="Perform benchmarks on marked test cases.")
+    group.addoption('--bench-only', action='store_true',
                     help="Perform benchmarks on marked test cases.")
 
 
@@ -58,8 +61,16 @@ class BenchmarkController(object):
 
         # Check to see if we need to benchmark any invocations.
         bench = item.keywords.get('bench')
+
         if bench is None:
             # Nope; nothing to see here.
+
+            # Check to see if we can skip this test (requested to /only/ run
+            # benchmarks).
+            if self.config.option.bench_only:
+                raise pytest.skip('no associated benchmark')
+
+            # Just continue to the test.
             return
 
         # Get the first argument to indicate what method to benchmark.
@@ -143,7 +154,7 @@ class BenchmarkController(object):
         colorama.init()
 
         # Write session header.
-        tr.write_sep('-', 'benchmark session starts')
+        tr.write_sep('-', 'benchmark summary')
         tr.write_line('collected %s items' % len(self._benchmarks))
         tr.write('\n')
 
