@@ -138,8 +138,25 @@ class BenchmarkController(object):
             # Construct a Benchmark instance to store the result.
             self._benchmarks.append(Benchmark(item, elapsed, real_iterations))
 
-        # Replace the test function with the wrapper.
-        item.obj = item_function_wrapper
+        if item.cls is not None:
+            setattr(item.cls, item.function.__name__, item_function_wrapper)
+
+        else:
+            item.obj = item_function_wrapper
+
+    def pytest_runtest_teardown(self, item):
+
+        # Check to see if we need to handle a benchmark.
+        bench = item.keywords.get('bench')
+        if bench is None:
+            # Nope; nothing to see here.
+            return
+
+        if self._item_function is not None:
+            # Restore the original item function if we need to.
+            if item.cls is not None:
+                setattr(item.cls, item.function.__name__,
+                        self._item_function)
 
     def pytest_terminal_summary(self, terminalreporter):
         tr = terminalreporter
