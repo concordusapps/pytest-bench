@@ -1,4 +1,6 @@
 # pytest-bench
+[![PyPi Version](https://pypip.in/v/pytest-bench/badge.png)](https://pypi.python.org/pypi/pytest-bench)
+![PyPi Downloads](https://pypip.in/d/pytest-bench/badge.png)
 > Benchmark utility that plugs into pytest.
 
 ## Installation
