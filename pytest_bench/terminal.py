@@ -61,15 +61,16 @@ def _get_terminal_size_tput():
 
 
 def _get_terminal_size_linux():
+    import os
+    env = os.environ
     def ioctl_GWINSZ(fd):
         try:
-            import fcntl
-            import termios
-            cr = struct.unpack('hh',
-                               fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-            return cr
+            import fcntl, termios, struct, os
+            cr = struct.unpack(b'hh', fcntl.ioctl(fd, termios.TIOCGWINSZ,
+                                                  b'1234'))
         except:
-            pass
+            return
+        return cr
     cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
     if not cr:
         try:
@@ -79,8 +80,5 @@ def _get_terminal_size_linux():
         except:
             pass
     if not cr:
-        try:
-            cr = (os.environ['LINES'], os.environ['COLUMNS'])
-        except:
-            return None
+        cr = (env.get('LINES', 25), env.get('COLUMNS', 80))
     return int(cr[1]), int(cr[0])
