@@ -1,20 +1,13 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
-from os import path
-from pkgutil import get_importer
+from imp import load_source
 
-# Calculate the base directory of the project to get relatives from.
-BASE_DIR = path.abspath(path.dirname(__file__))
-
-# Navigate, import, and retrieve the metadata of the project.
-_imp = get_importer(path.join(BASE_DIR, 'src', 'pytest_bench'))
-meta = _imp.find_module('meta').load_module('meta')
 
 setup(
     name='pytest-bench',
-    version=meta.version,
-    description=meta.description,
+    version=load_source('', 'pytest_bench/_version.py').__version__,
+    description='',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
