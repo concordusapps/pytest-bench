@@ -42,7 +42,7 @@ class Benchmark(object):
         if self.item.cls:
             obj.append(self.item.cls.__name__)
 
-        obj.append(self.item.function.__name__)
+        obj.append(self.item.name)
 
         filename = os.path.relpath(self.item.module.__file__) + ':'
         return '{} {}'.format(
