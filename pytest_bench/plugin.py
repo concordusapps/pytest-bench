@@ -4,7 +4,7 @@ import os
 import six
 import inspect
 import pytest
-# from timeit import timeit
+import shutil
 from timeit import default_timer as timer
 from functools import wraps
 from termcolor import colored
@@ -43,11 +43,11 @@ class Benchmark(object):
             obj.append(self.item.cls.__name__)
 
         obj.append(self.item.name)
+        return '.'.join(obj)
 
-        filename = os.path.relpath(self.item.module.__file__) + ':'
-        return '{} {}'.format(
-            colored(filename, 'white', attrs=['dark']),
-            '.'.join(obj))
+    @property
+    def filename(self):
+        return os.path.relpath(self.item.module.__file__)
 
     @property
     def elapsed(self):
@@ -86,6 +86,7 @@ class BenchmarkController(object):
         item_function = self._item_function = item.function
         item_function_globals = six.get_function_globals(item_function)
         item_function_argspec = inspect.getargspec(item.function)
+
         @wraps(item.function)
         def item_function_wrapper(*args, **kwargs):
             # Extract the function from the expression.
@@ -164,25 +165,33 @@ class BenchmarkController(object):
         # Ensure terminal output is colored.
         colorama.init()
 
+        # Calculate terminal width and size columns appropriately.
+        columns, lines = shutil.get_terminal_size()
+        name_header_len = columns - 30
+
         # Write session header.
         tr.write_sep('-', 'benchmark summary')
         tr.write_line('collected %s items' % len(self._benchmarks))
         tr.write('\n')
 
         # Format and write table header.
-        header = '{:<100}{:>15}'.format('Benchmark', 'Time (μs)')
-        tr.write_line('-' * 115)
+        header = ('{:<%d}{:>30}' % name_header_len).format(
+            'Benchmark', 'Time (μs)')
+
+        tr.write_line('-' * columns)
         tr.write_line(header)
-        tr.write_line('-' * 115)
+        tr.write_line('-' * columns)
 
         # Iterate through collected benchmarks.
         for benchmark in list(self._benchmarks):
             # Get and truncate the name.
-            name = benchmark.name
-            name = name[:92] + (name[92:] and '..')
+            name, filename = benchmark.name, benchmark.filename
+            allowed_name_len = name_header_len - len(filename) - 4
+            name = name[:allowed_name_len] + (name[allowed_name_len:] and '..')
 
             # Write out the name.
-            tr.write('{:<98}'.format(name))
+            tr.write(colored(filename + ': ', 'white', attrs=['dark']))
+            tr.write(('{:<%d}' % (allowed_name_len + 2)).format(name))
 
             # Perform the benchmark.
             elapsed = benchmark.elapsed
