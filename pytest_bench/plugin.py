@@ -38,11 +38,16 @@ class Benchmark(object):
 
     @property
     def name(self):
+        obj = []
+        if self.item.cls:
+            obj.append(self.item.cls.__name__)
+
+        obj.append(self.item.function.__name__)
+
         filename = os.path.relpath(self.item.module.__file__) + ':'
-        return '{} {}.{}'.format(
+        return '{} {}'.format(
             colored(filename, 'white', attrs=['dark']),
-            self.item.cls.__name__,
-            self.item.function.__name__)
+            '.'.join(obj))
 
     @property
     def elapsed(self):
@@ -109,7 +114,7 @@ class BenchmarkController(object):
             six.exec_('%s = benchmark' % expression, globals_, locals_)
 
             # Attempt to replace it in global scope as well.
-            # globals_.update(locals_)
+            globals_.update(locals_)
 
             # Get the (unbound) function.
             try:
@@ -133,19 +138,8 @@ class BenchmarkController(object):
             # Construct a Benchmark instance to store the result.
             self._benchmarks.append(Benchmark(item, elapsed, real_iterations))
 
-        setattr(item.cls, item.function.__name__, item_function_wrapper)
-
-    def pytest_runtest_teardown(self, item):
-
-        # Check to see if we need to handle a benchmark.
-        bench = item.keywords.get('bench')
-        if bench is None:
-            # Nope; nothing to see here.
-            return
-
-        if self._item_function is not None:
-            # Restore the original item function.
-            setattr(item.cls, item.function.__name__, self._item_function)
+        # Replace the test function with the wrapper.
+        item.obj = item_function_wrapper
 
     def pytest_terminal_summary(self, terminalreporter):
         tr = terminalreporter
