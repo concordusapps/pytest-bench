@@ -7,7 +7,7 @@ from imp import load_source
 setup(
     name='pytest-bench',
     version=load_source('', 'pytest_bench/_version.py').__version__,
-    description='',
+    description='Benchmark utility that plugs into pytest.',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -20,11 +20,12 @@ setup(
     author='Concordus Applications',
     author_email='support@concordusapps.com',
     url='http://github.com/concordusapps/pytest-bench',
-    # scripts=['bin/pytest_bench'],
-    package_dir={'pytest_bench': 'src/pytest_bench'},
-    packages=find_packages(path.join(BASE_DIR, 'src')),
+    packages=find_packages('.'),
     entry_points={'pytest11': ['pytest_bench = pytest_bench.plugin']},
     install_requires=(
         'pytest',
+        'termcolor',
+        'colorama',
+        'six'
     ),
 )

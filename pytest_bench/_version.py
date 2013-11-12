@@ -1,3 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, absolute_import, division
-from ._version import __version__, __version_info__  # noqa
+
+__version_info__ = (0, 3, 1)
+__version__ = '.'.join(map(str, __version_info__))
