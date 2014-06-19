@@ -175,7 +175,7 @@ class BenchmarkController(object):
 
         # Format and write table header.
         header = ('{:<%d}{:>30}' % name_header_len).format(
-            'Benchmark', 'Time (us)')
+            'Benchmark', 'Time (μs)')
 
         tr.write_line('-' * columns)
         tr.write_line(header)
