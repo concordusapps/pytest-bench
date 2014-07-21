@@ -22,6 +22,9 @@ def pytest_addoption(parser):
                     help="Perform benchmarks on marked test cases.")
     group.addoption('--bench-only', action='store_true',
                     help="Perform benchmarks on marked test cases.")
+    group.addoption("--bench-disable-gc", action="store_true",
+                    default=False,
+                    help="Disable GC during benchmarks.")
 
 
 def pytest_configure(config):
@@ -138,12 +141,14 @@ class BenchmarkController(object):
             @wraps(_function)
             def benchmark(*args, **kwargs):
                 # nonlocal elapsed, real_iterations
-                gc.collect()
-                gc.disable()
+                if self.config.option.bench_disable_gc:
+                    gc.collect()
+                    gc.disable()
                 start = timer()
                 result = _function(*args, **kwargs)
                 finish = timer()
-                gc.enable()
+                if self.config.option.bench_disable_gc:
+                    gc.enable()
                 props['times'].append(finish - start)
                 return result
 
