@@ -138,9 +138,12 @@ class BenchmarkController(object):
             @wraps(_function)
             def benchmark(*args, **kwargs):
                 # nonlocal elapsed, real_iterations
+                gc.collect()
+                gc.disable()
                 start = timer()
                 result = _function(*args, **kwargs)
                 finish = timer()
+                gc.enable()
                 props['times'].append(finish - start)
                 return result
 
