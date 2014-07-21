@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import os
-import math
-import six
-import inspect
-import pytest
-from timeit import default_timer as timer
+
 from functools import wraps
+from timeit import default_timer as timer
+import gc
+import inspect
+import math
+import os
+
 from termcolor import colored
 import colorama
+import pytest
+import six
+
 from .terminal import get_terminal_size
 
 
