@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import os
-import six
-import inspect
-import pytest
-from timeit import default_timer as timer
+
 from functools import wraps
+from timeit import default_timer as timer
+import gc
+import inspect
+import math
+import os
+
 from termcolor import colored
 import colorama
+import pytest
+import six
+
 from .terminal import get_terminal_size
 
 
@@ -26,15 +31,12 @@ def pytest_configure(config):
 
 class Benchmark(object):
 
-    def __init__(self, item, elapsed, iterations):
+    def __init__(self, item, times):
         #! The collected item from pytest.
         self.item = item
 
-        #! The number of elapsed seconds.
-        self._elapsed = elapsed
-
-        #! The number of iterations.
-        self.iterations = iterations
+        #! The number of elapsed seconds for each iteration.
+        self._times = times
 
     @property
     def name(self):
@@ -51,8 +53,41 @@ class Benchmark(object):
 
     @property
     def elapsed(self):
-        if self._elapsed and self.iterations:
-            return self._elapsed / self.iterations
+        if self._times:
+            return sum(self._times)
+
+    @property
+    def min(self):
+        if self._times:
+            return min(self._times)
+
+    @property
+    def max(self):
+        if self._times:
+            return max(self._times)
+
+    @property
+    def mean(self):
+        if self._times:
+            return sum(self._times) / len(self._times)
+
+    @property
+    def median(self):
+        if self._times:
+            return sorted(self._times)[len(self._times) // 2]
+
+    @property
+    def var(self):
+        # About math read this: http://legacy.python.org/dev/peps/pep-0450/
+        if self._times:
+            n = len(self._times)
+            ss = sum(x ** 2 for x in self._times) - (sum(self._times) ** 2) / n
+            return ss / (n - 1)
+
+    @property
+    def stddev(self):
+        if self._times:
+            return math.sqrt(self.var)
 
 
 class BenchmarkController(object):
@@ -97,16 +132,19 @@ class BenchmarkController(object):
             _function = locals_['_function']
 
             # Initialize benchmark process.
-            props = {'elapsed': 0.00, 'iterations': 0}
+            props = {'times': list()}
 
             # Create a wrapper for the method to benchmark.
             @wraps(_function)
             def benchmark(*args, **kwargs):
                 # nonlocal elapsed, real_iterations
+                gc.collect()
+                gc.disable()
                 start = timer()
                 result = _function(*args, **kwargs)
-                props['elapsed'] += timer() - start
-                props['iterations'] += 1
+                finish = timer()
+                gc.enable()
+                props['times'].append(finish - start)
                 return result
 
             # Replace the function with the wrapped function.
@@ -166,7 +204,8 @@ class BenchmarkController(object):
 
         # Calculate terminal width and size columns appropriately.
         columns, lines = get_terminal_size()
-        name_header_len = columns - 30
+        time_header_widths = [15, 15, 15, 11]
+        name_header_len = columns - sum(time_header_widths)
 
         # Write session header.
         tr.write_sep('-', 'benchmark summary')
@@ -174,8 +213,8 @@ class BenchmarkController(object):
         tr.write('\n')
 
         # Format and write table header.
-        header = ('{:<%d}{:>30}' % name_header_len).format(
-            'Benchmark', 'Time (μs)')
+        header = ('{:<%d}{:>%d}{:>%d}{:>%d}{:>%d}' % tuple([name_header_len] + time_header_widths)). \
+            format('Benchmark (time in us)', 'Min', 'Mean', 'Median', 'Stddev')
 
         tr.write_line('-' * columns)
         tr.write_line(header)
@@ -193,17 +232,20 @@ class BenchmarkController(object):
             tr.write(('{:<%d}' % (allowed_name_len + 2)).format(name))
 
             # Perform the benchmark.
-            elapsed = benchmark.elapsed
+            for tm, width in zip([benchmark.min, benchmark.mean, benchmark.median, benchmark.stddev],
+                                 time_header_widths):
 
-            if elapsed is None:
-                # Write dashes.
-                tr.write_line(colored(
-                    '{:>30}'.format('----'), 'white', attrs=['dark']))
+                if tm is None:
+                    # Write dashes.
+                    tr.write(colored(
+                        ('{:>%d}' % width).format('----'), 'white', attrs=['dark']))
 
-            else:
-                # Convert to microseconds.
-                elapsed *= 10 ** 6
+                else:
+                    # Convert to microseconds.
+                    tm *= 10 ** 6
 
-                # Write out the elapsed.
-                tr.write_line(colored(
-                    '{:>30,.4f}'.format(elapsed), 'white', attrs=['bold']))
+                    # Write out the tm.
+                    tr.write(colored(
+                        ('{:>%d,.2f}' % width).format(tm), 'white', attrs=['bold']))
+
+            tr.write('\n')
